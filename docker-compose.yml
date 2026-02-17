@@ -3,6 +3,10 @@ services:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
     environment:
       HOME: /home/node
+      SHELL: /bin/bash
+      PNPM_HOME: /home/node/.local/share/pnpm
+      GOBIN: /home/node/.local/share/pnpm
+      PATH: /home/node/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
       TERM: xterm-256color
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
@@ -11,6 +15,7 @@ services:
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - openclaw-pnpm:/home/node/.local/share/pnpm
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
       - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
@@ -31,6 +36,10 @@ services:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
     environment:
       HOME: /home/node
+      SHELL: /bin/bash
+      PNPM_HOME: /home/node/.local/share/pnpm
+      GOBIN: /home/node/.local/share/pnpm
+      PATH: /home/node/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
       TERM: xterm-256color
       OPENCLAW_GATEWAY_HOST: openclaw-gateway
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
@@ -41,7 +50,11 @@ services:
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - openclaw-pnpm:/home/node/.local/share/pnpm
     stdin_open: true
     tty: true
     init: true
     entrypoint: ["node", "dist/index.js"]
+
+volumes:
+  openclaw-pnpm:
