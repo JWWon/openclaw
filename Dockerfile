@@ -79,6 +79,20 @@ RUN uv python install 3.13 && \
     ln -sf /usr/local/bin/python3 /usr/local/bin/python && \
     chmod 755 /usr/local/bin/python3 /usr/local/bin/python
 
+# Install Homebrew (Linuxbrew)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    procps \
+    file \
+    git \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/profile && \
+    ln -sf /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew
+
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
     apt-get update && \
