@@ -89,9 +89,30 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+RUN if ! id -u linuxbrew >/dev/null 2>&1; then useradd -m -s /bin/bash linuxbrew; fi && \
+    mkdir -p /home/linuxbrew/.linuxbrew && \
+    chown -R linuxbrew:linuxbrew /home/linuxbrew && \
+    su - linuxbrew -c "NONINTERACTIVE=1 CI=1 /bin/bash -c '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'" && \
+    if [ ! -e /home/linuxbrew/.linuxbrew/Library ]; then \
+      ln -s /home/linuxbrew/.linuxbrew/Homebrew/Library /home/linuxbrew/.linuxbrew/Library; \
+    fi && \
+    [ -f /home/linuxbrew/.linuxbrew/Library/Homebrew/brew.sh ] && \
+    [ -x /home/linuxbrew/.linuxbrew/bin/brew ] && \
     echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/profile && \
     ln -sf /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew
+
+ENV HOMEBREW_PREFIX=/home/linuxbrew/.linuxbrew \
+    HOMEBREW_CELLAR=/home/linuxbrew/.linuxbrew/Cellar \
+    HOMEBREW_REPOSITORY=/home/linuxbrew/.linuxbrew/Homebrew
+
+# Allow the runtime `node` user to install formulae without manual chmod/chown.
+RUN mkdir -p \
+    /home/linuxbrew/.linuxbrew/var/homebrew/tmp \
+    /home/linuxbrew/.linuxbrew/var/homebrew/locks \
+    /home/linuxbrew/.linuxbrew/var/homebrew/linked \
+    /home/node/.cache/Homebrew && \
+    chown -R node:node /home/linuxbrew /home/node/.cache/Homebrew && \
+    chmod -R u+rwX,go+rX /home/linuxbrew /home/node/.cache/Homebrew
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
