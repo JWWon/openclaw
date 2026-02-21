@@ -7,6 +7,34 @@ RUN curl -fsSL https://bun.sh/install | bash && \
     rm -rf /root/.bun
 
 RUN corepack enable
+ENV PNPM_HOME=/home/node/.local/share/pnpm
+ENV PATH=/home/node/.local/bin:${PNPM_HOME}:${PATH}
+RUN cat >/etc/profile.d/openclaw-cli-paths.sh <<'EOF'
+# Keep OpenClaw CLI tool paths available in login shells (including root).
+export PNPM_HOME="${PNPM_HOME:-/home/node/.local/share/pnpm}"
+
+case ":$PATH:" in
+  *":/home/linuxbrew/.linuxbrew/bin:"*) ;;
+  *) PATH="/home/linuxbrew/.linuxbrew/bin:$PATH" ;;
+esac
+
+case ":$PATH:" in
+  *":/home/linuxbrew/.linuxbrew/sbin:"*) ;;
+  *) PATH="/home/linuxbrew/.linuxbrew/sbin:$PATH" ;;
+esac
+
+case ":$PATH:" in
+  *":/home/node/.local/bin:"*) ;;
+  *) PATH="/home/node/.local/bin:$PATH" ;;
+esac
+
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+export PATH
+EOF
 
 WORKDIR /app
 RUN chown node:node /app
@@ -52,8 +80,8 @@ ARG OPENCLAW_INSTALL_CLAUDE_CLI="1"
 ARG OPENCLAW_CLAUDE_CHANNEL="stable"
 RUN if [ -n "$OPENCLAW_INSTALL_CLAUDE_CLI" ]; then \
     su - node -c "curl -fsSL https://claude.ai/install.sh | bash -s ${OPENCLAW_CLAUDE_CHANNEL}" && \
-    ln -sf /home/node/.local/bin/claude /usr/local/bin/claude && \
-    /usr/local/bin/claude --version; \
+    rm -f /usr/local/bin/claude && \
+    /home/node/.local/bin/claude --version; \
     fi
 
 # Install GitHub CLI (gh)
@@ -78,41 +106,6 @@ RUN uv python install 3.13 && \
     ln -sf /root/.local/share/uv/python/cpython-3.13.*/bin/python3.13 /usr/local/bin/python3 && \
     ln -sf /usr/local/bin/python3 /usr/local/bin/python && \
     chmod 755 /usr/local/bin/python3 /usr/local/bin/python
-
-# Install Homebrew (Linuxbrew)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    procps \
-    file \
-    git \
-    && apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN if ! id -u linuxbrew >/dev/null 2>&1; then useradd -m -s /bin/bash linuxbrew; fi && \
-    mkdir -p /home/linuxbrew/.linuxbrew && \
-    chown -R linuxbrew:linuxbrew /home/linuxbrew && \
-    su - linuxbrew -c "NONINTERACTIVE=1 CI=1 /bin/bash -c '$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)'" && \
-    if [ ! -e /home/linuxbrew/.linuxbrew/Library ]; then \
-      ln -s /home/linuxbrew/.linuxbrew/Homebrew/Library /home/linuxbrew/.linuxbrew/Library; \
-    fi && \
-    [ -f /home/linuxbrew/.linuxbrew/Library/Homebrew/brew.sh ] && \
-    [ -x /home/linuxbrew/.linuxbrew/bin/brew ] && \
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /etc/profile && \
-    ln -sf /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew
-
-ENV HOMEBREW_PREFIX=/home/linuxbrew/.linuxbrew \
-    HOMEBREW_CELLAR=/home/linuxbrew/.linuxbrew/Cellar \
-    HOMEBREW_REPOSITORY=/home/linuxbrew/.linuxbrew/Homebrew
-
-# Allow the runtime `node` user to install formulae without manual chmod/chown.
-RUN mkdir -p \
-    /home/linuxbrew/.linuxbrew/var/homebrew/tmp \
-    /home/linuxbrew/.linuxbrew/var/homebrew/locks \
-    /home/linuxbrew/.linuxbrew/var/homebrew/linked \
-    /home/node/.cache/Homebrew && \
-    chown -R node:node /home/linuxbrew /home/node/.cache/Homebrew && \
-    chmod -R u+rwX,go+rX /home/linuxbrew /home/node/.cache/Homebrew
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 RUN if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
