@@ -13,9 +13,9 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
     volumes:
+      - openclaw-home:/home/node
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-      - openclaw-pnpm:/home/node/.local/share/pnpm
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
       - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
@@ -48,13 +48,21 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
     volumes:
+      - openclaw-home:/home/node
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-      - openclaw-pnpm:/home/node/.local/share/pnpm
     stdin_open: true
     tty: true
     init: true
-    entrypoint: ["node", "dist/index.js"]
+    restart: unless-stopped
+    entrypoint:
+      [
+        "/bin/bash",
+        "-lc",
+        "if [ \"$#\" -eq 0 ]; then exec tail -f /dev/null; else exec node dist/index.js \"$@\"; fi",
+        "openclaw-cli",
+      ]
+    command: []
 
 volumes:
-  openclaw-pnpm:
+  openclaw-home:

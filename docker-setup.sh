@@ -273,8 +273,8 @@ echo "  ${COMPOSE_HINT} run --rm openclaw-cli channels add --channel discord --t
 echo "Docs: https://docs.openclaw.ai/channels"
 
 echo ""
-echo "==> Starting gateway"
-docker compose "${COMPOSE_ARGS[@]}" up -d openclaw-gateway
+echo "==> Starting gateway + CLI helper"
+docker compose "${COMPOSE_ARGS[@]}" up -d openclaw-gateway openclaw-cli
 
 echo ""
 echo "Gateway running with host port mapping."
@@ -285,4 +285,5 @@ echo "Token: $OPENCLAW_GATEWAY_TOKEN"
 echo ""
 echo "Commands:"
 echo "  ${COMPOSE_HINT} logs -f openclaw-gateway"
+echo "  ${COMPOSE_HINT} logs -f openclaw-cli"
 echo "  ${COMPOSE_HINT} exec openclaw-gateway node dist/index.js health --token \"$OPENCLAW_GATEWAY_TOKEN\""
